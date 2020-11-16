@@ -6,6 +6,7 @@ import Pyro4
 
 
 @Pyro4.expose
+@Pyro4.behavior(instance_mode="single")
 class Servidor(InterfaceCliente, InterfaceServidor):
     def __init__(self):
         self.primeiro_jogador_conectado: bool = False
@@ -29,8 +30,11 @@ class Servidor(InterfaceCliente, InterfaceServidor):
     def sincronizar_pecas_do_tabuleiro(self):
         pass
 
-    def mostrar_tela_do_jogador(self):
-        pass
+    def mostrar_tela_do_jogador(self, nome: str):
+        jogador = self.selecionar_jogador(nome=nome)
+        if jogador:
+            print("cheguei aqui")
+            jogador.mostrar_tela_do_jogador(nome)
 
     def enviar_mensagem_de_chat(self, mensagem: str):
         pass
@@ -39,19 +43,29 @@ class Servidor(InterfaceCliente, InterfaceServidor):
         pass
 
     # Funções exclusivas do servidor, para gerir os clientes
-    def criar_novo_cliente(self, nome: str) -> Cliente:
-        return Cliente(nome=nome)
+    def selecionar_jogador(self, nome) -> Optional[Cliente]:
+        jogador: Optional[Cliente] = next(
+            (i for i in self.jogadores if i.nome == nome),
+            None,
+        )
+        return jogador
+
+    def criar_novo_cliente(self, nome: str, primeiro_jogador: bool) -> Cliente:
+        return Cliente(nome=nome, sou_primeiro_jogador=primeiro_jogador)
 
     def definir_se_eh_o_primeiro_jogador(self, nome: str) -> str:
         jogador = self.selecionar_jogador(nome=nome)
         mensagem = ""
-        if jogador is None:
+        if jogador is None and len(self.jogadores) < 2:
             if not self.primeiro_jogador_conectado:
-                novo_jogador = self.criar_novo_cliente(nome=nome)
+                novo_jogador = self.criar_novo_cliente(nome=nome, primeiro_jogador=True)
                 self.jogadores.append(novo_jogador)
+                self.primeiro_jogador_conectado = True
                 mensagem = "Sou o primeiro jogador"
             else:
-                novo_jogador = self.criar_novo_cliente(nome=nome)
+                novo_jogador = self.criar_novo_cliente(
+                    nome=nome, primeiro_jogador=False
+                )
                 self.jogadores.append(novo_jogador)
                 mensagem = "Sou o segundo jogador"
 
@@ -64,17 +78,6 @@ class Servidor(InterfaceCliente, InterfaceServidor):
             return "O número máximo de jogadores na partida já foi alcançado"
 
         return f"{mensagem}. Cliente {nome} criado e conectado no servidor de nomes"
-
-    def selecionar_jogador(self, nome) -> Optional[Cliente]:
-        jogador: Optional[Cliente] = next(
-            (
-                i
-                for i in self.jogadores
-                if i.nome == nome
-            ),
-            None,
-        )
-        return jogador
 
     def desconectar_cliente(self, nome: str) -> str:
         jogador = self.selecionar_jogador(nome)

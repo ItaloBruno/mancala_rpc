@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from tabuleiro import TelaDoJogo
+from typing import Tuple
 
 
 class InterfaceCliente(ABC):
@@ -11,15 +13,11 @@ class InterfaceCliente(ABC):
         pass
 
     @abstractmethod
-    def definir_ganhador(self):
+    def criar_tela_do_jogador(self) -> TelaDoJogo:
         pass
 
     @abstractmethod
-    def criar_tela_do_jogador(self):
-        pass
-
-    @abstractmethod
-    def movimentar_pecas_do_tabuleiro(self):
+    def movimentar_pecas_do_tabuleiro(self, coordenas_do_clique: Tuple[int]):
         pass
 
     @abstractmethod
@@ -27,7 +25,7 @@ class InterfaceCliente(ABC):
         pass
 
     @abstractmethod
-    def mostrar_tela_do_jogador(self):
+    def mostrar_tela_do_jogador(self, nome: str):
         pass
 
     @abstractmethod
