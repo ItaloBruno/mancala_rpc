@@ -3,9 +3,9 @@ from abc import ABC, abstractmethod
 
 class InterfaceServidor(ABC):
     @abstractmethod
-    def conectar_novo_cliente(self, nome: str) -> str:
+    def conectar_novo_cliente(self, nome_jogador: str) -> str:
         pass
 
     @abstractmethod
-    def desconectar_cliente(self, nome: str) -> str:
+    def desconectar_cliente(self, nome_jogador: str) -> str:
         pass
