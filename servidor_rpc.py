@@ -43,8 +43,7 @@ class Servidor(InterfaceCliente, InterfaceServidor):
         jogador = self.selecionar_jogador(nome=nome_jogador)
         if jogador:
             print("cheguei aqui")
-        #     jogador.mostrar_tela_do_jogador(nome)
-        pass
+            jogador.mostrar_tela_do_jogador(nome_jogador)
 
     def enviar_mensagem_de_chat(self, remetente: str, mensagem: str):
         pass
@@ -57,11 +56,11 @@ class Servidor(InterfaceCliente, InterfaceServidor):
     ########################################################
 
     def selecionar_jogador(self, nome) -> Optional[Cliente]:
-        # jogador: Optional[Cliente] = next(
-        #     (i for i in self.jogadores if i.nome == nome),
-        #     None,
-        # )
-        # return jogador
+        jogador: Optional[Cliente] = next(
+            (i for i in self.jogadores if i.nome == nome),
+            None,
+        )
+        return jogador
         pass
 
     def criar_novo_cliente(self, nome: str, primeiro_jogador: bool) -> Cliente:
@@ -75,11 +74,9 @@ class Servidor(InterfaceCliente, InterfaceServidor):
                 novo_jogador = self.criar_novo_cliente(
                     nome=nome_jogador, primeiro_jogador=True
                 )
-                # TODO
-                #  já consigo registrar um novo jogador no servidor de nomes mas precisa
-                #  ver uma maneira de fazer o registro e não ser bloqueante
-                registrar_no_servidor_de_nomes(novo_jogador, nome_jogador, ENDERECO_IP)
                 self.jogadores.append(novo_jogador)
+                print(self.jogadores)
+                novo_jogador.message("servidor", "vai vai vai")
                 self.primeiro_jogador_conectado = True
                 mensagem = "Sou o primeiro jogador"
             else:
@@ -92,14 +89,15 @@ class Servidor(InterfaceCliente, InterfaceServidor):
         return mensagem
         pass
 
-    def conectar_novo_cliente(self, nome_jogador: str) -> str:
+    def conectar_novo_cliente(self, nome_jogador: str, cliente) -> str:
+        print(cliente)
         mensagem = self.definir_se_eh_o_primeiro_jogador(nome_jogador)
 
         if not mensagem:
             return "O número máximo de jogadores na partida já foi alcançado"
 
+        self.jogadores[0].message("vai", "mandar msng")
         return f"{mensagem}. Cliente {nome_jogador} criado e conectado no servidor de nomes"
-        # pass
 
     def desconectar_cliente(self, nome: str) -> str:
         # jogador = self.selecionar_jogador(nome)
@@ -111,22 +109,56 @@ class Servidor(InterfaceCliente, InterfaceServidor):
         #     return f"Cliente {nome} não encontrado"
         pass
 
-    def teste(self):
-        print("OBAAAAAAAAAAAAAAAAAA")
+    def teste(self, nome_jogador: str):
+        # jogador = self.selecionar_jogador(nome_jogador)
+        # indice = self.jogadores.index(jogador)
+        # ou = 0
+        # if not indice:
+        #     ou = 1
+        #
+        # outro_jogador = self.jogadores[ou]
+        jogador_1 = self.jogadores[0]
+        jogador_1.message("vai", "vai jogador 1")
+        jogador_2 = self.jogadores[1]
+        jogador_2.message("vai", "vai jogador 1")
+        #
+        # jogador.receber_mensagem_de_chat(nome_jogador, "deu cerrto a conexao")
+        # outro_jogador.receber_mensagem_de_chat("", "deu cerrto a conexao")
+
+
+import threading
+
+
+class DaemonThread(threading.Thread):
+    def __init__(self, chat):
+        threading.Thread.__init__(self)
+        self.chatter = chat
+        self.setDaemon(True)
+
+    def run(self):
+        with Pyro4.core.Daemon() as daemon:
+            daemon.register(self.chatter)
+            daemon.requestLoop()
 
 
 def registrar_no_servidor_de_nomes(instancia_para_registrar, nome, endereco_ip):
     """
     Registrando a classe/objeto no servidor de nomes, para que eu possa acessá-lo de formata remota.
-    :return:
     """
-    Pyro4.Daemon.serveSimple(
-        {instancia_para_registrar: f"mancala.{nome}"}, ns=True, host=endereco_ip
-    )
+    print("criando")
+    vai = DaemonThread(instancia_para_registrar)
+    vai.start()
+
+    # Pyro4.Daemon.serveSimple(
+    #     {instancia_para_registrar: f"mancala.{nome}"}, ns=True, host=endereco_ip
+    # )
+    print("fooooooi")
+    # tem que ter uma instânci do servidor no cliente
 
 
 if __name__ == "__main__":
-    registrar_no_servidor_de_nomes(Servidor(), "servidor", ENDERECO_IP)
+    Pyro4.Daemon.serveSimple({Servidor: f"mancala.servidor"}, ns=True, host=ENDERECO_IP)
+
 
 # # Registrando minha classe Servidor no servidor de nomes
 # daemon = Pyro4.Daemon()

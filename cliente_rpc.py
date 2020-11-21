@@ -2,17 +2,17 @@ from mensagem import Mensagem, TipoPermitidosDeMensagem
 from interface_cliente import InterfaceCliente
 from tabuleiro import TelaDoJogo
 from typing import Tuple
-import pygame
 import Pyro4
 
 
 @Pyro4.expose
 @Pyro4.behavior(instance_mode="single")
-class Cliente(InterfaceCliente):
+class Cliente(object):
     def __init__(self, nome: str, sou_primeiro_jogador: bool):
         self.nome: str = nome
         self.sou_primeiro_jogador: bool = sou_primeiro_jogador
         self.tabuleiro: TelaDoJogo = self.criar_tela_do_jogador()
+        self.servidor = Pyro4.core.Proxy("PYRONAME:mancala.servidor")
 
     def desistir_da_partida(self, nome_jogador: str):
         pass
@@ -53,55 +53,21 @@ class Cliente(InterfaceCliente):
         mensagem = Mensagem(tipo="chat", conteudo=mensagem, remetente=self.nome)
         return mensagem
 
-    def receber_mensagem_de_chat(self, destinatario: str, mensagem: Mensagem):
-        if mensagem.tipo == TipoPermitidosDeMensagem.desistencia.value:
-            print("Eu venci a partida, ieeeeeeei")
-            self.desistir_da_partida(self.nome)
+    def receber_mensagem_de_chat(self, destinatario: str, mensagem: str):
+        # if mensagem.tipo == TipoPermitidosDeMensagem.desistencia.value:
+        #     print("Eu venci a partida, ieeeeeeei")
+        #     self.desistir_da_partida(self.nome)
+        #
+        # print(mensagem.conteudo)
+        print(mensagem)
 
-        print(mensagem.conteudo)
-
-
-if __name__ == "__main__":
-    meu_nome_usuario = input("Digite seu nome de usuário: ")
-
-    print("INFO: Para desistir da partida, digite 'sair do jogo' ou 'desconectar'")
-    servidor = Pyro4.Proxy("PYRONAME:mancala.servidor")
-    resposta = servidor.conectar_novo_cliente(meu_nome_usuario)
-    mostrar_tela_jogo = True
-
-    while mostrar_tela_jogo:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                mostrar_tela_jogo = False
-
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if pygame.mouse.get_pressed()[0]:
-                # resultado = tela_do_jogador.clicou_em_alguma_das_minhas_casa(
-                #     pygame.mouse.get_pos()
-                # )
-                # time.sleep(0.5)
-                # if resultado:
-                #     novos_valores_pecas_tabuleiro = (
-                #         tela_do_jogador.pegar_os_valores_das_casas_e_kallah()
-                #     )
-                #
-                #     mensagem_movimentacao = Mensagem(
-                #         tipo=TipoPermitidosDeMensagem.movimentacao.value,
-                #         conteudo=novos_valores_pecas_tabuleiro,
-                #         remetente=meu_nome_usuario,
-                #     )
-                #
-                #     cliente.enviar_movimentacao_ao_servidor(mensagem_movimentacao)
-                #     resultado = False
-                #     continue
-                pass
-        try:
-            # terminou = tela_do_jogador.verficar_se_alguem_ganhou()
-            # if terminou:
-            #     mostrar_tela_jogo = False
-            # tela_do_jogador.desenhar_elementos_na_tela()
-            # tela_do_jogador.mostrar_tela_do_jogador()
-            pass
-        except KeyboardInterrupt:
-            # cliente.encerrar_conexao_servidor()
-            break
+    @Pyro4.expose
+    @Pyro4.oneway
+    def message(self, nick, msg):
+        # if nick != self.nick and nick != "Servidor":
+        #     self.chat_history += '<font  color=#FF0000>' + nick + ":" + " " + msg + '<br>' + '</font>'
+        #     # print(self.chat_history)
+        #     # print(self.chat_history)
+        # elif nick == "Servidor":
+        #     self.chat_history += '<font  color=#437C17>' + '<b>' + nick + ":" + " " + msg + '</b>' + '<br>' + '<br>' + '</font>'
+        print(msg)

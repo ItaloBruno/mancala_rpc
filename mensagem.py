@@ -3,6 +3,7 @@ from typing import List, Any
 from constantes import CODIFICACAO
 from excecoes import TipoMensagemInvalida
 from enum import Enum, unique
+import Pyro4
 
 
 @unique
@@ -56,19 +57,16 @@ class Mensagem:
             f"Esse tipo de mensagem é inválida. Tipos permitidos: {TipoPermitidosDeMensagem.list()}"
         )
 
-    def converter_bytes_para_json_e_setar_valores_da_classe(self, json_em_bytes: bytes):
-        json_em_texto = json_em_bytes.decode(CODIFICACAO).replace("'", '"')
-        resultado = json.loads(json_em_texto)
+    def setar_valores_da_classe(self, json_da_mensagem: dict) -> None:
+        self._eh_um_tipo_valido(json_da_mensagem.get("tipo"))
+        self._conteudo = json_da_mensagem.get("conteudo")
+        self._tipo = json_da_mensagem.get("tipo")
+        self._remetente = json_da_mensagem.get("remetente")
 
-        self._eh_um_tipo_valido(resultado.get("tipo"))
-        self._conteudo = resultado.get("conteudo")
-        self._tipo = resultado.get("tipo")
-        self._remetente = resultado.get("remetente")
-
-    def converter_msg_em_bytes_para_enviar(self) -> bytes:
+    def converter_msg_em_dict_para_enviar(self) -> dict:
         msg = {
             "tipo": self._tipo,
             "conteudo": self._conteudo,
             "remetente": self.remetente,
         }
-        return json.dumps(msg).encode(CODIFICACAO)
+        return msg
