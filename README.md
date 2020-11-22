@@ -18,7 +18,7 @@ Italo Bruno Cunha da Silva
 
 Antes de tudo, instale as dependências do projeto com o comando abaixo:
 
-`pip install -r requirement.txt`
+    `pip install -r requirement.txt`
 
 Pronto, agora vamos lá rodar o jogo e se divertir xD
 
@@ -26,7 +26,7 @@ Pronto, agora vamos lá rodar o jogo e se divertir xD
     registrar o servidor do jogo e possibilitar o ser acesso remoto. 
     Para isso, abra um terminal e execute o comando abaixo:
 
-   `pyro4-ns`
+    `pyro4-ns`
 
 2.  Agora finalmente podemos executar o servidor do jogo (uhuuuuu \o/). 
     Para isso, crie mais um terminal e execute o camando abaixo:
