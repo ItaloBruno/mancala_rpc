@@ -4,6 +4,8 @@ import Pyro4
 import os
 from mensagem import Mensagem, TipoPermitidosDeMensagem
 from tabuleiro import TelaDoJogo
+import pygame
+import time
 
 
 class Jogador(object):
@@ -78,16 +80,64 @@ class Jogador(object):
         print("People on this channel: %s" % (", ".join(people)))
         print("INFO: Para desistir da partida, digite /sair")
 
-        tela_do_jogador = TelaDoJogo(self.nome_jogador, self.sou_primeiro_jogador)
-        tela_do_jogador.iniciar_tela_do_jogador()
-        tela_do_jogador.desenhar_tabuleiro()
-        tela_do_jogador.mostrar_tela_do_jogador()
+        self.tela_do_jogador = TelaDoJogo(self.nome_jogador, self.sou_primeiro_jogador)
+        self.tela_do_jogador.iniciar_tela_do_jogador()
+        self.tela_do_jogador.desenhar_tabuleiro()
+        self.tela_do_jogador.mostrar_tela_do_jogador()
 
-        # TODO: Implementar a parte do chat assíncrono (não bloqueante)
-        # TODO: Pegar os eventos do mouse e fazer a atualização das telas
+        thread_controlador = threading.Thread(target=self.controlador_da_partida)
+        thread_chat = threading.Thread(target=self.enviar_mensagem_de_chat)
+
+        thread_controlador.start()
+        thread_chat.start()
+
+    def controlador_da_partida(self):
+        mostrar_tela_jogo = True
+        while mostrar_tela_jogo:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    mostrar_tela_jogo = False
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if pygame.mouse.get_pressed()[0]:
+                    resultado = self.tela_do_jogador.clicou_em_alguma_das_minhas_casa(
+                        pygame.mouse.get_pos()
+                    )
+                    time.sleep(0.5)
+                    if resultado:
+                        novos_valores_pecas_tabuleiro = (
+                            self.tela_do_jogador.pegar_os_valores_das_casas_e_kallah()
+                        )
+
+                        mensagem_movimentacao = Mensagem(
+                            tipo=TipoPermitidosDeMensagem.movimentacao.value,
+                            conteudo=novos_valores_pecas_tabuleiro,
+                            remetente=self.nome_jogador,
+                        )
+
+                        self.servidor.publish(
+                            self.canal_de_comunicacao,
+                            self.nome_jogador,
+                            mensagem_movimentacao.converter_msg_em_dict_para_enviar(),
+                        )
+                        resultado = False
+                        continue
+
+            terminou = self.tela_do_jogador.verficar_se_alguem_ganhou()
+            if terminou:
+                mostrar_tela_jogo = False
+
+            self.tela_do_jogador.desenhar_elementos_na_tela()
+            self.tela_do_jogador.mostrar_tela_do_jogador()
+
+            # TODO: Implementar a parte do chat assíncrono (não bloqueante)
+            # TODO: Pegar os eventos do mouse e fazer a atualização das telas
+
+    def enviar_mensagem_de_chat(self):
         try:
             try:
                 while not self.conexao_encerrada:
+                    pass
                     line = input(f"{self.nome_jogador}> ").strip()
                     if line == "/quit":
                         break
@@ -95,7 +145,7 @@ class Jogador(object):
                         self.historico_de_mensagens += f"\n{self.nome_jogador} > {line}"
                         mensagem: Mensagem = Mensagem(
                             tipo="chat",
-                            conteudo=self.historico_de_mensagens,
+                            conteudo=f"\n{self.nome_jogador} > {line}",
                             remetente=self.nome_jogador,
                         )
                         self.servidor.publish(

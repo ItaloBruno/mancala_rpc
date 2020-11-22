@@ -2,6 +2,8 @@ import Pyro4
 from mensagem import Mensagem
 
 
+# TODO: fazer controle de turno
+
 # Chat box administration server.
 # Handles logins, logouts, channels and nicknames, and the chatting.
 @Pyro4.expose
