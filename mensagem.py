@@ -1,9 +1,6 @@
-import json
-from typing import List, Any
-from constantes import CODIFICACAO
+from typing import Any
 from excecoes import TipoMensagemInvalida
 from enum import Enum, unique
-import Pyro4
 
 
 @unique

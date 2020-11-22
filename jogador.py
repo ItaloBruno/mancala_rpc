@@ -1,17 +1,17 @@
-import sys
-import threading
-import Pyro4
-import os
 from mensagem import Mensagem, TipoPermitidosDeMensagem
 from tabuleiro import TelaDoJogo
+
+import threading
+import Pyro4
 import pygame
 import time
+import os
 
 
 class Jogador(object):
     def __init__(self):
-        self.servidor = Pyro4.core.Proxy("PYRONAME:example.chatbox.server")
-        self.conexao_encerrada = 0
+        self.servidor = Pyro4.core.Proxy("PYRONAME:mancala.servidor")
+        self.conexao_encerrada = False
         self.historico_de_mensagens = ""
         self.canal_de_comunicacao = ""
         self.nome_jogador = ""
@@ -20,7 +20,7 @@ class Jogador(object):
 
     @Pyro4.expose
     @Pyro4.oneway
-    def message(self, nome_jogador, mensagem: dict):
+    def receber_mensagem(self, nome_jogador: str, mensagem: dict):
         if nome_jogador != self.nome_jogador:
             mensagem_recebida_do_servidor = Mensagem(
                 tipo="chat", conteudo="", remetente=self.nome_jogador
@@ -59,26 +59,37 @@ class Jogador(object):
             print(self.historico_de_mensagens)
 
     def iniciar_partida(self):
-        nicks = self.servidor.getNicks()
-        if nicks:
-            print("The following people are on the server: %s" % (", ".join(nicks)))
-        channels = sorted(self.servidor.getChannels())
-        if channels:
-            print("The following channels already exist: %s" % (", ".join(channels)))
+        nomes_jogadores = self.servidor.pegar_nomes_dos_jogadores()
+        if nomes_jogadores:
+            print(
+                "Os seguintes jogadores estão conectados no servidor: {}".format(
+                    (", ".join(nomes_jogadores))
+                )
+            )
+
+        canais = sorted(self.servidor.pegar_canais_de_comunicacao())
+        if canais:
+            print("Os seguintes canais já existem: {}".format((", ".join(canais))))
             self.canal_de_comunicacao = input(
-                "Choose a channel or create a new one: "
+                "Escolha um dos canais para se conectar ou crie um novo: "
             ).strip()
         else:
-            print("The server has no active channels.")
-            self.canal_de_comunicacao = input("Name for new channel: ").strip()
+            print("O servidor não tem canais ativos")
+            self.canal_de_comunicacao = input(
+                "Digite um nome para o novo canal: "
+            ).strip()
 
-        self.nome_jogador = input("Choose a nickname: ").strip()
-        people = self.servidor.join(self.canal_de_comunicacao, self.nome_jogador, self)
-        print(
-            "Joined channel %s as %s" % (self.canal_de_comunicacao, self.nome_jogador)
+        self.nome_jogador = input("Escolha seu nome: ").strip()
+        jogadores_registrados = self.servidor.registrar(
+            self.canal_de_comunicacao, self.nome_jogador, self
         )
-        print("People on this channel: %s" % (", ".join(people)))
-        print("INFO: Para desistir da partida, digite /sair")
+        self.historico_de_mensagens += f"\nConectado ao canal {self.canal_de_comunicacao} como {self.nome_jogador}"
+
+        self.historico_de_mensagens += "\nPessoas conectadas nesse canal: {}".format(
+                (", ".join(jogadores_registrados))
+        )
+
+        self.historico_de_mensagens += "\nINFO: Para desistir da partida, digite /sair"
 
         self.tela_do_jogador = TelaDoJogo(self.nome_jogador, self.sou_primeiro_jogador)
         self.tela_do_jogador.iniciar_tela_do_jogador()
@@ -115,7 +126,7 @@ class Jogador(object):
                             remetente=self.nome_jogador,
                         )
 
-                        self.servidor.publish(
+                        self.servidor.publicar(
                             self.canal_de_comunicacao,
                             self.nome_jogador,
                             mensagem_movimentacao.converter_msg_em_dict_para_enviar(),
@@ -130,25 +141,37 @@ class Jogador(object):
             self.tela_do_jogador.desenhar_elementos_na_tela()
             self.tela_do_jogador.mostrar_tela_do_jogador()
 
-            # TODO: Implementar a parte do chat assíncrono (não bloqueante)
-            # TODO: Pegar os eventos do mouse e fazer a atualização das telas
+    def desconectar(self):
+        mensagem: Mensagem = Mensagem(
+            tipo="desistencia",
+            conteudo="Você ganhou a partida",
+            remetente=self.nome_jogador,
+        )
+        self.servidor.publicar(
+            self.canal_de_comunicacao,
+            self.nome_jogador,
+            mensagem.converter_msg_em_dict_para_enviar(),
+        )
+        self.servidor.desconectar_jogador(self.canal_de_comunicacao, self.nome_jogador)
+        self.conexao_encerrada = 1
+        self._pyroDaemon.shutdown()
 
     def enviar_mensagem_de_chat(self):
         try:
             try:
                 while not self.conexao_encerrada:
                     pass
-                    line = input(f"{self.nome_jogador}> ").strip()
-                    if line == "/quit":
+                    msg = input(f"{self.nome_jogador}> ").strip()
+                    if msg == "/sair":
                         break
-                    if line:
-                        self.historico_de_mensagens += f"\n{self.nome_jogador} > {line}"
+                    if msg:
+                        self.historico_de_mensagens += f"\n{self.nome_jogador} > {msg}"
                         mensagem: Mensagem = Mensagem(
                             tipo="chat",
-                            conteudo=f"\n{self.nome_jogador} > {line}",
+                            conteudo=f"\n{self.nome_jogador} > {msg}",
                             remetente=self.nome_jogador,
                         )
-                        self.servidor.publish(
+                        self.servidor.publicar(
                             self.canal_de_comunicacao,
                             self.nome_jogador,
                             mensagem.converter_msg_em_dict_para_enviar(),
@@ -156,19 +179,7 @@ class Jogador(object):
             except EOFError:
                 pass
         finally:
-            mensagem: Mensagem = Mensagem(
-                tipo="desistencia",
-                conteudo="Você ganhou a partida",
-                remetente=self.nome_jogador,
-            )
-            self.servidor.publish(
-                self.canal_de_comunicacao,
-                self.nome_jogador,
-                mensagem.converter_msg_em_dict_para_enviar(),
-            )
-            self.servidor.leave(self.canal_de_comunicacao, self.nome_jogador)
-            self.conexao_encerrada = 1
-            self._pyroDaemon.shutdown()
+            self.desconectar()
 
 
 class DaemonThread(threading.Thread):
@@ -187,4 +198,3 @@ jogador = Jogador()
 daemonthread = DaemonThread(jogador)
 daemonthread.start()
 jogador.iniciar_partida()
-print("Saída executada com sucesso.")

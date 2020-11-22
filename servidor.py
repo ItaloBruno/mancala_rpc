@@ -1,93 +1,95 @@
-import Pyro4
 from mensagem import Mensagem
+import Pyro4
 
 
-# TODO: fazer controle de turno
-
-# Chat box administration server.
-# Handles logins, logouts, channels and nicknames, and the chatting.
 @Pyro4.expose
 @Pyro4.behavior(instance_mode="single")
-class ChatBox(object):
+class Servidor(object):
     def __init__(self):
-        self.channels = (
+        self.canais_de_comunicacao = (
             {}
         )  # registered channels { channel --> (nick, client callback) list }
-        self.nicks = []  # all registered nicks on this server
+        self.nomes_jogadores_conectados = []  # all registered nicks on this server
 
-    def getChannels(self):
-        return list(self.channels.keys())
+    def pegar_canais_de_comunicacao(self):
+        return list(self.canais_de_comunicacao.keys())
 
-    def getNicks(self):
-        return self.nicks
+    def pegar_nomes_dos_jogadores(self):
+        return self.nomes_jogadores_conectados
 
-    def join(self, channel, nick, callback):
-        if not channel or not nick:
-            raise ValueError("invalid channel or nick name")
-        if nick in self.nicks:
-            raise ValueError("this nick is already in use")
-        if channel not in self.channels:
-            print("CREATING NEW CHANNEL %s" % channel)
-            self.channels[channel] = []
+    def registrar(self, nome_canal, nome_jogador, objeto_jogador):
+        if not nome_canal or not nome_jogador:
+            raise ValueError("Nome de canal/jogador inválido!!!")
+
+        if nome_jogador in self.nomes_jogadores_conectados:
+            raise ValueError("Esse nome de jogador já está sendo usado!!!")
+
+        if nome_canal not in self.canais_de_comunicacao:
+            print(f"Criando novo canal {nome_canal}")
+            self.canais_de_comunicacao[nome_canal] = []
 
         sou_o_primeiro_jogador = False
-        if not self.nicks:
+        if not self.nomes_jogadores_conectados:
             sou_o_primeiro_jogador = True
 
-        self.channels[channel].append((nick, callback))
-        self.nicks.append(nick)
-        print("%s JOINED %s" % (nick, channel))
+        self.canais_de_comunicacao[nome_canal].append((nome_jogador, objeto_jogador))
+        self.nomes_jogadores_conectados.append(nome_jogador)
+        print(f"Jogador {nome_jogador} se conectou no canal {nome_canal}")
 
         mensagem_de_conexao = Mensagem(
             tipo="conexao_estabelecida",
             conteudo=sou_o_primeiro_jogador,
             remetente="servidor",
         )
-        self.publish(
-            channel, "SERVER", mensagem_de_conexao.converter_msg_em_dict_para_enviar()
+        self.publicar(
+            nome_canal,
+            "SERVER",
+            mensagem_de_conexao.converter_msg_em_dict_para_enviar(),
         )
 
         return [
-            nick for (nick, c) in self.channels[channel]
-        ]  # return all nicks in this channel
+            nome_jogador for (nome_jogador, c) in self.canais_de_comunicacao[nome_canal]
+        ]
 
-    def leave(self, channel, nick):
-        if channel not in self.channels:
-            print("IGNORED UNKNOWN CHANNEL %s" % channel)
+    def publicar(self, nome_canal, nome_jogador, mensagem):
+        if nome_canal not in self.canais_de_comunicacao:
+            print(f"CANAL DESCONHECIDO IGNORADO {nome_canal}")
             return
-        for (n, c) in self.channels[channel]:
-            if n == nick:
-                self.channels[channel].remove((n, c))
-                self.nicks.remove(nick)
+        for (n, c) in self.canais_de_comunicacao[nome_canal][:]:
+            try:
+                c.receber_mensagem(nome_jogador, mensagem)
+            except Pyro4.errors.ConnectionClosedError:
+                if (n, c) in self.canais_de_comunicacao[nome_canal]:
+                    self.canais_de_comunicacao[nome_canal].remove((n, c))
+                    print(f"Ouvinte morto removido {n} - {c} ")
+
+    def desconectar_jogador(self, nome_canal, nome_jogador):
+        if nome_canal not in self.canais_de_comunicacao:
+            print(f"CANAL DESCONHECIDO IGNORADO {nome_canal}")
+            return
+
+        for (n, c) in self.canais_de_comunicacao[nome_canal]:
+            if n == nome_jogador:
+                self.canais_de_comunicacao[nome_canal].remove((n, c))
                 break
 
         mensagem_de_conexao = Mensagem(
-            tipo="desistencia", conteudo=f"\n** {nick} saiu do jogo **", remetente=nick
+            tipo="desistencia",
+            conteudo=f"\n** {nome_jogador} saiu do jogo **",
+            remetente=nome_jogador,
         )
-        self.publish(
-            channel, "SERVER", mensagem_de_conexao.converter_msg_em_dict_para_enviar()
+        self.publicar(
+            nome_canal,
+            "SERVER",
+            mensagem_de_conexao.converter_msg_em_dict_para_enviar(),
         )
 
-        if len(self.channels[channel]) < 1:
-            del self.channels[channel]
-            print("REMOVED CHANNEL %s" % channel)
-        self.nicks.remove(nick)
-        print("%s LEFT %s" % (nick, channel))
+        if len(self.canais_de_comunicacao[nome_canal]) < 1:
+            del self.canais_de_comunicacao[nome_canal]
+            print(f"Canal {nome_canal} removido")
 
-    def publish(self, channel, nick, msg):
-        if channel not in self.channels:
-            print("IGNORED UNKNOWN CHANNEL %s" % channel)
-            return
-        for (n, c) in self.channels[channel][:]:  # use a copy of the list
-            try:
-                c.message(nick, msg)  # oneway call
-                # c.receber(nick, msg)
-            except Pyro4.errors.ConnectionClosedError:
-                # connection dropped, remove the listener if it's still there
-                # check for existence because other thread may have killed it already
-                if (n, c) in self.channels[channel]:
-                    self.channels[channel].remove((n, c))
-                    print("Removed dead listener %s %s" % (n, c))
+        self.nomes_jogadores_conectados.remove(nome_jogador)
+        print(f"O jogador {nome_jogador} deixou o canal {nome_canal}")
 
 
-Pyro4.Daemon.serveSimple({ChatBox: "example.chatbox.server"})
+Pyro4.Daemon.serveSimple({Servidor: "mancala.servidor"})

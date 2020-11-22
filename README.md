@@ -18,7 +18,7 @@ Italo Bruno Cunha da Silva
 
 Antes de tudo, instale as dependências do projeto com o comando abaixo:
 
-    `pip install -r requirement.txt`
+`pip install -r requirement.txt`
 
 Pronto, agora vamos lá rodar o jogo e se divertir xD
 
@@ -56,10 +56,10 @@ Pronto, agora vamos lá rodar o jogo e se divertir xD
 
 ## Possíveis melhorias
 
-- Controle de turno;
-- Desconectar os jogadores do servidor de forma correta (quando for solicitado através do chat);
+- Controle de turno :x:	
+- Desconectar os jogadores do servidor de forma correta (quando for solicitado através do chat) :x:	
 - Criar um botão na tela do jogador para que eu possa realizar a desistência da partida, 
-  colocando uma outra alternativa além do chat. 
-- Melhorar mensagens mostradas para os jogadores, como se é o primeiro jogador a se conectar ou não;
-- Criar uma interface gráfica para o chat entre os jogadores;
-- Modificar o nome de classes e variáveis para uma melhor compreensão do código.
+  colocando uma outra alternativa além do chat :x:	
+- Melhorar mensagens mostradas para os jogadores, como se é o primeiro jogador a se conectar ou não :x:	
+- Criar uma interface gráfica para o chat entre os jogadores :x:	
+- Modificar o nome de classes e variáveis para uma melhor compreensão do código :heavy_check_mark:
