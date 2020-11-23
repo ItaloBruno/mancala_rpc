@@ -57,6 +57,7 @@ Pronto, agora vamos lá rodar o jogo e se divertir xD
 ## Possíveis melhorias
 
 - Controle de turno :x:	
+- Reiniciar partida :x:	
 - Desconectar os jogadores do servidor de forma correta (quando for solicitado através do chat) :x:	
 - Criar um botão na tela do jogador para que eu possa realizar a desistência da partida, 
   colocando uma outra alternativa além do chat :x:	
