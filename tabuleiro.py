@@ -424,6 +424,20 @@ class TelaDoJogo:
                 indice
             ]
 
+    def desenhar_se_sou_o_primeiro_jogador(self):
+        if self.sou_primeiro_jogador:
+            texto = "1° jogador"
+        else:
+            texto = "2° jogador"
+
+        texto_tela = Texto(
+            10,
+            10,
+            VERMELHO,
+            texto,
+        )
+        texto_tela.desenhar_elemento(self.tela)
+
     @staticmethod
     def mostrar_tela_do_jogador():
         pygame.display.flip()

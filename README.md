@@ -60,6 +60,8 @@ Pronto, agora vamos lá rodar o jogo e se divertir xD
 - Desconectar os jogadores do servidor de forma correta (quando for solicitado através do chat) :x:	
 - Criar um botão na tela do jogador para que eu possa realizar a desistência da partida, 
   colocando uma outra alternativa além do chat :x:	
-- Melhorar mensagens mostradas para os jogadores, como se é o primeiro jogador a se conectar ou não :x:	
+- Melhorar mensagens mostradas para os jogadores, como: 
+    - se sou o primeiro jogador ou não :heavy_check_mark:
+    - se tenho direito a +1 jogada :x:
 - Criar uma interface gráfica para o chat entre os jogadores :x:	
 - Modificar o nome de classes e variáveis para uma melhor compreensão do código :heavy_check_mark:

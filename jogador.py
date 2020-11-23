@@ -39,11 +39,7 @@ class Jogador(object):
                 == TipoPermitidosDeMensagem.conexao_estabelecida.value
             ):
                 if mensagem_recebida_do_servidor.conteudo:
-                    self.historico_de_mensagens += f"\nsou o primeiro jogador\n** jogador {nome_jogador} conectado **"
                     self.sou_primeiro_jogador = True
-                else:
-                    self.historico_de_mensagens += f"\nsou o segundo jogador\n** jogador {nome_jogador} conectado **"
-
             elif (
                 mensagem_recebida_do_servidor.tipo
                 == TipoPermitidosDeMensagem.movimentacao.value
@@ -83,10 +79,12 @@ class Jogador(object):
         jogadores_registrados = self.servidor.registrar(
             self.canal_de_comunicacao, self.nome_jogador, self
         )
-        self.historico_de_mensagens += f"\nConectado ao canal {self.canal_de_comunicacao} como {self.nome_jogador}"
+        self.historico_de_mensagens += (
+            f"\nConectado ao canal {self.canal_de_comunicacao} como {self.nome_jogador}"
+        )
 
         self.historico_de_mensagens += "\nPessoas conectadas nesse canal: {}".format(
-                (", ".join(jogadores_registrados))
+            (", ".join(jogadores_registrados))
         )
 
         self.historico_de_mensagens += "\nINFO: Para desistir da partida, digite /sair"
@@ -94,6 +92,7 @@ class Jogador(object):
         self.tela_do_jogador = TelaDoJogo(self.nome_jogador, self.sou_primeiro_jogador)
         self.tela_do_jogador.iniciar_tela_do_jogador()
         self.tela_do_jogador.desenhar_tabuleiro()
+        self.tela_do_jogador.desenhar_se_sou_o_primeiro_jogador()
         self.tela_do_jogador.mostrar_tela_do_jogador()
 
         thread_controlador = threading.Thread(target=self.controlador_da_partida)
