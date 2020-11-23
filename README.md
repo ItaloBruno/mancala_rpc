@@ -1,7 +1,7 @@
 # Mancala utilizando RMI
 
 Implentação do jogo [mancala](https://www.youtube.com/watch?v=Sog-iKBh6vs) e de um chat para a 
-interação entre os jogadores utilzando utlizando a tecnologia Pyro4.
+interação entre os jogadores utlizando a tecnologia Pyro4.
 
 ## Autor
 
